@@ -1,18 +1,36 @@
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDice } from "@fortawesome/free-solid-svg-icons";
-import Head from "next/head";
 import { InfinitySpin } from "react-loader-spinner";
 import translateQuestionToString from "data/questionTranslator.js";
+import Fireworks from "react-canvas-confetti/dist/presets/fireworks";
 import symbolMap from "../data/symbolImport";
-import Image from "next/image";
 import localFont from "next/font/local";
+import { Roboto } from "next/font/google";
 import "tailwindcss/tailwind.css";
-
-library.add(faDice);
+import { fas } from "@fortawesome/free-solid-svg-icons";
+import { faDice } from "@fortawesome/free-solid-svg-icons";
+const { library } = require("@fortawesome/fontawesome-svg-core");
+library.add(fas, faDice);
 
 const manaFont = localFont({ src: "../public/fonts/mana.woff2" });
+const roboticFont = localFont({
+  src: "../public/fonts/MechanismoRegular-p7ywa.otf",
+});
+const roboto = Roboto({
+  weight: "400",
+  style: "normal",
+  subsets: ["latin"],
+});
+
+const canvasStyles = {
+  position: "fixed",
+  pointerEvents: "none",
+  width: "100%",
+  height: "100%",
+  top: 0,
+  left: 0,
+  zIndex: 2,
+};
 
 export default function Home({ Component, pageProps }) {
   // const SERVER_URL = "https://magikinator-d04800de7ba6.herokuapp.com/guess"
@@ -42,10 +60,13 @@ export default function Home({ Component, pageProps }) {
   const [bestCardCandidates, setBestCardCandidates] = useState([]);
   const [errorFound, setError] = useState(false);
   const [reverting, setReverting] = useState(false);
+  const [winScreen, setWinScreen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     console.log("Called for first question and set of cards...");
     setLoading(true);
+    // onRun();
     const fetchFirstQuestion = async () => {
       try {
         await fetch(SERVER_URL, {
@@ -59,7 +80,7 @@ export default function Home({ Component, pageProps }) {
           .then((response) => response.json())
           .then((data) => {
             let bestQ = data["bestQuestion"];
-            let cardGuessedByServer = data["guessedCard"];
+            let cardGuessedByServer = "Warm Welcome";
             let entropyVector = JSON.parse(data["entropyVector"]);
             let entropyValue = data["entropyNumber"];
             let topCards = data["bestCardCandidates"];
@@ -69,10 +90,11 @@ export default function Home({ Component, pageProps }) {
             setEntropyValue(entropyValue);
             setBestCardCandidates(topCards);
             setPreviousBestCardCandidates([topCards]);
-            setQuestions([...questions, bestQ]);
-            setBestCards([...bestCards, cardGuessedByServer]);
-            setEntropyVectors([...entropyVectors, entropyVector]);
-            setEntropyValues([...entropyValues, entropyValue]);
+            setQuestions([bestQ]);
+            setBestCards([cardGuessedByServer]);
+            setEntropyVectors([entropyVector]);
+            setEntropyValues([entropyValue]);
+            setRejectedCards([]);
           })
           .then((data) => {
             setLoading(false);
@@ -81,9 +103,46 @@ export default function Home({ Component, pageProps }) {
         setError(true);
       }
     };
-
     fetchFirstQuestion();
   }, []);
+
+  // Gets called at reset.
+  const fetchFirstQuestion = async () => {
+    try {
+      await fetch(SERVER_URL, {
+        method: "GET",
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          let bestQ = data["bestQuestion"];
+          let cardGuessedByServer = data["guessedCard"];
+          let entropyVector = JSON.parse(data["entropyVector"]);
+          let entropyValue = data["entropyNumber"];
+          let topCards = data["bestCardCandidates"];
+          setBestQuestion(bestQ);
+          setBestCard(cardGuessedByServer);
+          setEntropy(entropyVector);
+          setEntropyValue(entropyValue);
+          setBestCardCandidates(topCards);
+          setPreviousBestCardCandidates([topCards]);
+          setQuestions([bestQ]);
+          setBestCards([cardGuessedByServer]);
+          setEntropyVectors([entropyVector]);
+          setEntropyValues([entropyValue]);
+          setRejectedCards([]);
+        })
+        .then((data) => {
+          setLoading(false);
+        });
+    } catch (err) {
+      setError(true);
+    }
+  };
 
   const goBackToLastQuestion = async () => {
     if (questions.length <= 1) {
@@ -165,27 +224,98 @@ export default function Home({ Component, pageProps }) {
       });
   };
 
-  const resetGame = () => {};
+  const gameEndScreen = () => {
+    onRun();
+    setWinScreen(true);
+  };
+
+  const resetGame = () => {
+    onStop();
+    setWinScreen(false);
+    setLoading(true);
+    fetchFirstQuestion();
+    setFoundACard(false);
+  };
+
+  /* Logic for Confetti Explosion */
+  const [conductor, setConductor] = useState();
+  const onRun = () => {
+    conductor?.run({ speed: 0.5 });
+  };
+  const onStop = () => {
+    conductor?.stop();
+  };
+
+  const onInit = ({ conductor }) => {
+    setConductor(conductor);
+  };
 
   return (
     <div class="bg-slate-900 h-screen">
+      <Fireworks onInit={onInit} style={canvasStyles} />
       <div class="relative container h-screen max-w-full bg-slate-900">
         <div class="relative w-screen bg-slate-900 p-2">
-          <p class="text-center font-semibold text-slate-50"> MAGIKINATOR </p>
+          <p
+            class={
+              "text-center font-semibold text-slate-50 " + roboticFont.className
+            }
+          >
+            {" "}
+            MAGIKINATOR{" "}
+          </p>
         </div>
+        {winScreen ? (
+          <div class="fixed left-[33%] top-[15%] self-center w-1/3 h-1/3 bg-slate-400 z-10">
+            <div
+              class={
+                "mt-5 text-sm text-center self-center font-semibold " +
+                roboto.className
+              }
+            >
+              Silly human, you have been{" "}
+              <span class="text-red-900">Magikinat'ed</span>
+            </div>
+            <div class="flex flex-col">
+              <div
+                class={
+                  "self-center w-[65%] h-24 border-l-0 border-r-0 border p-2 mt-4 text-center " +
+                  roboto.className
+                }
+              >
+                {bestCard}
+                <div class="mt-5 text-[.6rem] text-xs">
+                  {" "}
+                  Card already played 5000 times{" "}
+                </div>
+                <div class="mt-0 text-[.6rem] text-xs">
+                  {" "}
+                  Card last played 01/05/2024{" "}
+                </div>
+                <button
+                  class="mt-5 border border-slate-50 rounded p-.5 pl-2 pr-2 hover:opacity-60"
+                  onClick={() => resetGame()}
+                >
+                  {" "}
+                  Play Again?{" "}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {foundACard ? (
           <div class="flex flex-col self-center justify-center text-slate-50">
             <p class="text-slate-50 self-center font-semibold m-6">
               Is this your card?
             </p>
-            <div class="">
-              <img
-                src={SCRYFALL_IMG_URL + bestCard}
-                alt="No Image Found for Card"
-                class="self-center border-solid border max-w-lg rounded-lg"
-                width={150}
-                height={150}
-              />
+            <div class="relative self-center w-44 h-60 rounded bg-amber-400">
+              <div class="self-center">
+                <img
+                  src={SCRYFALL_IMG_URL + bestCard}
+                  alt="No Image Found for Card"
+                  class="absolute mt-1 ml-1 self-center max-w-lg text-center rounded-lg"
+                  width={165}
+                />
+              </div>
             </div>
             <div class="w-64 flex self-center flex-row items-center">
               {["YES", "NO"].map((answer) => (
@@ -194,7 +324,7 @@ export default function Home({ Component, pageProps }) {
                   type="button"
                   onClick={async () => {
                     if (answer == "YES") {
-                      return;
+                      return gameEndScreen();
                     }
 
                     if (answer == "NO") {
@@ -208,22 +338,30 @@ export default function Home({ Component, pageProps }) {
             </div>
           </div>
         ) : (
-          <div class="flex flex-col justify-center mt-1">
+          <div
+            class={
+              "flex flex-col justify-center mt-1 " +
+              (winScreen ? "brightness-50" : "")
+            }
+          >
             <div class="w-44 self-center h-10 mb-2 border-t-0 border-l-0 border-r-0 border">
-              <a target="_blank" href="https://scryfall.com/random">
+              <a
+                target="_blank"
+                href="https://scryfall.com/random"
+                class="text-slate-50 hover:opacity-50"
+              >
                 <FontAwesomeIcon
                   class="w-6 mt-2.5 hover:opacity-25 hover:cursor-pointer text-slate-50"
-                  icon="fa-solid fa-dice"
+                  icon={["fas", "dice"]}
                 />
               </a>
             </div>
-            <div class="relative self-center w-44 h-60 border rounded bg-slate-800">
+            <div class="relative self-center w-44 h-60 rounded bg-amber-400">
               <img
                 src={SCRYFALL_IMG_URL + bestCard}
-                alt="Searching for your card..."
-                class="absolute mt-1 ml-1 self-center border-solid border max-w-lg rounded-lg"
+                alt=""
+                class="absolute mt-1 ml-1 self-center max-w-lg text-center rounded-lg"
                 width={165}
-                height={160}
               />
             </div>
             {/* <div class="flex border-solid border h-24">
@@ -244,7 +382,12 @@ export default function Home({ Component, pageProps }) {
               <div class="grid justify-items-center content-center p-4 pt-0">
                 {loading ? (
                   <div>
-                    <div class="text-center p-4 text-base font-semibold text-slate-50">
+                    <div
+                      class={
+                        "text-center p-4 text-base font-semibold text-slate-50 " +
+                        roboto.className
+                      }
+                    >
                       {" "}
                       Loading best question{" "}
                     </div>
@@ -254,11 +397,16 @@ export default function Home({ Component, pageProps }) {
                   </div>
                 ) : (
                   <div class="flex justify-center flex-col content-center pb-4">
-                    <div class="text-center p-4 pt-3 text-base font-seri font-semibold text-slate-50">
+                    <div
+                      class={
+                        "text-center p-4 pt-3 text-base font-semibold text-slate-50 " +
+                        roboto.className
+                      }
+                    >
                       {" "}
                       {translateQuestionToString(bestQuestion)[0]}{" "}
                     </div>
-                    <div class="w-64 pt-3 flex self-center flex-col items-center">
+                    <div class="w-64 pt-1 flex self-center flex-col items-center">
                       {questions.length >= 2 ? (
                         <button
                           type="button"
@@ -283,7 +431,15 @@ export default function Home({ Component, pageProps }) {
                       ) : null}
                       {["YES", "NO", "MAYBE"].map((answer) => (
                         <button
-                          class="m-1.5 text-xs w-32 pt-1 pb-1 border-solid border rounded-sm border-slate-50 font-normal hover:opacity-50 text-slate-50"
+                          class={
+                            "mt-1.5 text-xs w-32 pt-1 pb-1 border-solid border rounded-sm border-slate-50 font-semibold hover:opacity-50 text-slate-50 " +
+                            roboto.className +
+                            (answer == "YES"
+                              ? " text-emerald-400"
+                              : answer == "NO"
+                              ? " text-red-400"
+                              : " text-slate-50")
+                          }
                           type="button"
                           onClick={async () => answerQuestion(answer)}
                         >
