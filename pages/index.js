@@ -52,7 +52,7 @@ export default function Home({ Component, pageProps }) {
   const [bestQuestion, setBestQuestion] = useState("");
   const [bestCard, setBestCard] = useState("");
   const [entropy, setEntropy] = useState(1);
-  const [entropyValue, setEntropyValue] = useState(1);
+  const [entropyValue, setEntropyValue] = useState(0);
 
   const [countAfterRejected, setCountAfterRejected] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -87,7 +87,7 @@ export default function Home({ Component, pageProps }) {
             setBestQuestion(bestQ);
             setBestCard(cardGuessedByServer);
             setEntropy(entropyVector);
-            setEntropyValue(entropyValue);
+            setEntropyValue(0);
             setBestCardCandidates(topCards);
             setPreviousBestCardCandidates([topCards]);
             setQuestions([bestQ]);
@@ -282,7 +282,7 @@ export default function Home({ Component, pageProps }) {
                   roboto.className
                 }
               >
-                {bestCard}
+                {bestCard.split(" ").map(word => word.toUpperCase()).join(" ")}
                 <div class="mt-5 text-[.6rem] text-xs">
                   {" "}
                   Card already played 5000 times{" "}
@@ -356,7 +356,7 @@ export default function Home({ Component, pageProps }) {
                 />
               </a>
             </div>
-            <div class="relative self-center w-44 h-60 rounded bg-amber-400">
+            <div class="relative self-center w-44 h-60 mt-3 rounded bg-amber-400">
               <img
                 src={SCRYFALL_IMG_URL + bestCard}
                 alt=""
@@ -378,7 +378,7 @@ export default function Home({ Component, pageProps }) {
                 />
               ))}
             </div> */}
-            <div class="justify-end basis-1/2 mt-4">
+            <div class="justify-end basis-1/2 mt-1">
               <div class="grid justify-items-center content-center p-4 pt-0">
                 {loading ? (
                   <div>
@@ -406,6 +406,7 @@ export default function Home({ Component, pageProps }) {
                       {" "}
                       {translateQuestionToString(bestQuestion)[0]}{" "}
                     </div>
+					<progress value={Math.log(questions.length - 2) / 25} class="w-44 self-center h-1 rounded-sm border-t-0 border-slate-900 border bg-slate-300"/>
                     <div class="w-64 pt-1 flex self-center flex-col items-center">
                       {questions.length >= 2 ? (
                         <button
@@ -432,7 +433,7 @@ export default function Home({ Component, pageProps }) {
                       {["YES", "NO", "MAYBE"].map((answer) => (
                         <button
                           class={
-                            "mt-1.5 text-xs w-32 pt-1 pb-1 border-solid border rounded-sm border-slate-50 font-semibold hover:opacity-50 text-slate-50 " +
+                            "mt-1.5 text-xs w-32 pt-1 pb-1 border-solid border rounded-sm border-slate-50 font-semibold hover:opacity-50 " +
                             roboto.className +
                             (answer == "YES"
                               ? " text-emerald-400"
