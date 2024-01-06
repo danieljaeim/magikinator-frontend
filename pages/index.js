@@ -61,6 +61,7 @@ export default function Home({ Component, pageProps }) {
   const [errorFound, setError] = useState(false);
   const [reverting, setReverting] = useState(false);
   const [winScreen, setWinScreen] = useState(false);
+  const [restartScreen, setRestartScreen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
@@ -232,6 +233,7 @@ export default function Home({ Component, pageProps }) {
   const resetGame = () => {
     onStop();
     setWinScreen(false);
+	setRestartScreen(false);
     setLoading(true);
     fetchFirstQuestion();
     setFoundACard(false);
@@ -251,7 +253,12 @@ export default function Home({ Component, pageProps }) {
   };
 
   return (
-    <div class="bg-slate-900 h-screen">
+    <div
+      class={
+        "bg-slate-900 h-screen " +
+        (winScreen || restartScreen ? "pointer-events-none" : "")
+      }
+    >
       <Fireworks onInit={onInit} style={canvasStyles} />
       <div class="relative container h-screen max-w-full bg-slate-900">
         <div class="relative w-screen bg-slate-900 p-2">
@@ -264,6 +271,25 @@ export default function Home({ Component, pageProps }) {
             MAGIKINATOR{" "}
           </p>
         </div>
+        {restartScreen ? (
+          <div class="fixed left-[38%] top-[35%] self-center w-1/4 h-1/6 bg-slate-400 z-10 text-center">
+            <div class="relative border border-black h-[100%] pt-5">
+              <div>Restart?</div>
+              <button
+                class="relative mt-2 m-3 pl-2 pr-2 border border-slate-50 rounded hover:opacity-60 pointer-events-auto"
+                onClick={() => resetGame()}
+              >
+                Yes
+              </button>
+              <button
+                class="relative mt-2 m-3 pl-2 pr-2 border border-slate-50 rounded hover:opacity-60 pointer-events-auto"
+                onClick={() => setRestartScreen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
         {winScreen ? (
           <div class="fixed left-[33%] top-[15%] self-center w-1/3 h-1/3 bg-slate-400 z-10">
             <div
@@ -282,7 +308,10 @@ export default function Home({ Component, pageProps }) {
                   roboto.className
                 }
               >
-                {bestCard.split(" ").map(word => word.toUpperCase()).join(" ")}
+                {bestCard
+                  .split(" ")
+                  .map((word) => word.toUpperCase())
+                  .join(" ")}
                 <div class="mt-5 text-[.6rem] text-xs">
                   {" "}
                   Card already played 5000 times{" "}
@@ -292,7 +321,7 @@ export default function Home({ Component, pageProps }) {
                   Card last played 01/05/2024{" "}
                 </div>
                 <button
-                  class="mt-5 border border-slate-50 rounded p-.5 pl-2 pr-2 hover:opacity-60"
+                  class="mt-5 border border-slate-50 rounded p-.5 pl-2 pr-2 hover:opacity-60 pointer-events-auto"
                   onClick={() => resetGame()}
                 >
                   {" "}
@@ -341,7 +370,7 @@ export default function Home({ Component, pageProps }) {
           <div
             class={
               "flex flex-col justify-center mt-1 " +
-              (winScreen ? "brightness-50" : "")
+              (winScreen || restartScreen ? "brightness-50" : "")
             }
           >
             <div class="w-44 self-center h-10 mb-2 border-t-0 border-l-0 border-r-0 border">
@@ -356,13 +385,19 @@ export default function Home({ Component, pageProps }) {
                 />
               </a>
             </div>
-            <div class="relative self-center w-44 h-60 mt-3 rounded bg-amber-400">
-              <img
-                src={SCRYFALL_IMG_URL + bestCard}
-                alt=""
-                class="absolute mt-1 ml-1 self-center max-w-lg text-center rounded-lg"
-                width={165}
-              />
+            <div class="relative self-center w-44 h-60 mt-3 rounded bg-amber-400 hover:pointer">
+              <div class="absolute w-44 h-60 border border-white rounded brightness-100 hover:brightness-75">
+                <button
+                  class="absolute w-44 h-60 z-30 hover:pointer"
+                  onClick={() => {}}
+                />
+                <img
+                  src={SCRYFALL_IMG_URL + bestCard}
+                  alt=""
+                  class="absolute mt-1 ml-1 self-center max-w-lg text-center rounded-lg hover:pointer"
+                  width={165}
+                />
+              </div>
             </div>
             {/* <div class="flex border-solid border h-24">
               {bestCardCandidates.map((card, index) => (
@@ -406,29 +441,54 @@ export default function Home({ Component, pageProps }) {
                       {" "}
                       {translateQuestionToString(bestQuestion)[0]}{" "}
                     </div>
-					<progress value={Math.log(questions.length - 2) / 25} class="w-44 self-center h-1 rounded-sm border-t-0 border-slate-900 border bg-slate-300"/>
+                    <progress
+                      value={(questions.length - 2) / 100}
+                      class="w-44 self-center h-1 rounded-sm border-t-0 border-slate-900 border bg-slate-300"
+                    />
                     <div class="w-64 pt-1 flex self-center flex-col items-center">
                       {questions.length >= 2 ? (
-                        <button
-                          type="button"
-                          class="absolute self-start ml-3 text-sm p-1 rounded-md"
-                          onClick={async () => goBackToLastQuestion()}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="#ffffff"
-                            class="w-6 h-6 hover:opacity-20"
+                        <div class="absolute self-start">
+                          <button
+                            type="button"
+                            class="absolute self-start ml-2 text-sm p-1 rounded-md"
+                            onClick={async () => goBackToLastQuestion()}
                           >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke-width="1.5"
+                              stroke="#ffffff"
+                              class="w-6 h-6 hover:opacity-20"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            class="absolute self-start ml-2 mt-14 text-sm p-1 rounded-md hover:opacity-50"
+                            onClick={async () => setRestartScreen(true)}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke-width="1.5"
+                              stroke="#FAA916"
+                              class="w-6 h-6"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       ) : null}
                       {["YES", "NO", "MAYBE"].map((answer) => (
                         <button
