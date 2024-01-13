@@ -1,34 +1,133 @@
-import symbolMap from './symbolImport.js';
+import axios from 'axios';
 
 export default function translateQuestionToString(question) {
-    let isMatchQuestion = question.includes("@");
-    let symbol = null;
-    if (isMatchQuestion) {
-        var column = question.split("@")[0].split("_").join(' ');
-        var value = question.split("@")[1].split("_").join(' ');
-        let colors_map = {
-            'R': 'red',
-            'U': 'blue',
-            'B': 'black',
-            'W': 'white',
-            'G': 'green'
-        }
+  let isMatchQuestion = question.includes("{") || question.includes("}");
+  let symbols = [];
+  if (isMatchQuestion) {
+    var column = question.split("@")[0].split("_").join(" ");
+    var value = question.split("@")[1];
+    let colors_map = {
+      R: "red",
+      U: "blue",
+      B: "black",
+      W: "white",
+      G: "green",
+    };
 
-        // Translate color letters into color names
-        if (colors_map[value]) {
-            value = colors_map[value]
-        }
-
-        // Translate bracket symbols into .svg links
-        if (value in symbolMap) {
-            console.log("Found " + value + " in symbolmap!")
-            symbol = symbolMap[value]
-        }
-
-        return [`Does your card have ${column} ${value}`, symbol];
+    // Translate color letters into color names
+    if (colors_map[value]) {
+      value = colors_map[value];
     }
 
-    return [question.split("_").join(" "), symbol];
+    // Translate bracket symbols into .svg links
+    let start = 0
+    let cur = 0
+    while (cur < value.length) {
+        if (value[cur] == "}") {
+            let slice_str = value.slice(start, cur + 1)
+            symbols.push(symbolMap[slice_str] ?? null)
+            start = cur + 1
+        }
+        cur += 1
+    }
+
+    return { text: `Does your card have ${column} `, symbols };
+  }
+
+  return { text: question, symbols:[] };
 }
 
-console.log(translateQuestionToString("mana_cost@{3}"))
+const getSymbolMap = async () => {
+    let data = await axios.get('https://api.scryfall.com/symbology')
+        .then(response => response.data.data)
+    
+    let symbolDict = {}
+    for (let symbolObj of data) {
+        symbolDict[symbolObj['symbol']] = symbolObj["svg_uri"]
+    }
+
+    return symbolDict
+}
+
+// Copy and pasted from getSymbolMap call
+const symbolMap = {
+    '{T}': 'https://svgs.scryfall.io/card-symbols/T.svg',
+    '{Q}': 'https://svgs.scryfall.io/card-symbols/Q.svg',
+    '{E}': 'https://svgs.scryfall.io/card-symbols/E.svg',
+    '{PW}': 'https://svgs.scryfall.io/card-symbols/PW.svg',
+    '{CHAOS}': 'https://svgs.scryfall.io/card-symbols/CHAOS.svg',
+    '{A}': 'https://svgs.scryfall.io/card-symbols/A.svg',
+    '{TK}': 'https://svgs.scryfall.io/card-symbols/TK.svg',
+    '{X}': 'https://svgs.scryfall.io/card-symbols/X.svg',
+    '{Y}': 'https://svgs.scryfall.io/card-symbols/Y.svg',
+    '{Z}': 'https://svgs.scryfall.io/card-symbols/Z.svg',
+    '{0}': 'https://svgs.scryfall.io/card-symbols/0.svg',
+    '{½}': 'https://svgs.scryfall.io/card-symbols/HALF.svg',
+    '{1}': 'https://svgs.scryfall.io/card-symbols/1.svg',
+    '{2}': 'https://svgs.scryfall.io/card-symbols/2.svg',
+    '{3}': 'https://svgs.scryfall.io/card-symbols/3.svg',
+    '{4}': 'https://svgs.scryfall.io/card-symbols/4.svg',
+    '{5}': 'https://svgs.scryfall.io/card-symbols/5.svg',
+    '{6}': 'https://svgs.scryfall.io/card-symbols/6.svg',
+    '{7}': 'https://svgs.scryfall.io/card-symbols/7.svg',
+    '{8}': 'https://svgs.scryfall.io/card-symbols/8.svg',
+    '{9}': 'https://svgs.scryfall.io/card-symbols/9.svg',
+    '{10}': 'https://svgs.scryfall.io/card-symbols/10.svg',
+    '{11}': 'https://svgs.scryfall.io/card-symbols/11.svg',
+    '{12}': 'https://svgs.scryfall.io/card-symbols/12.svg',
+    '{13}': 'https://svgs.scryfall.io/card-symbols/13.svg',
+    '{14}': 'https://svgs.scryfall.io/card-symbols/14.svg',
+    '{15}': 'https://svgs.scryfall.io/card-symbols/15.svg',
+    '{16}': 'https://svgs.scryfall.io/card-symbols/16.svg',
+    '{17}': 'https://svgs.scryfall.io/card-symbols/17.svg',
+    '{18}': 'https://svgs.scryfall.io/card-symbols/18.svg',
+    '{19}': 'https://svgs.scryfall.io/card-symbols/19.svg',
+    '{20}': 'https://svgs.scryfall.io/card-symbols/20.svg',
+    '{100}': 'https://svgs.scryfall.io/card-symbols/100.svg',
+    '{1000000}': 'https://svgs.scryfall.io/card-symbols/1000000.svg',
+    '{∞}': 'https://svgs.scryfall.io/card-symbols/INFINITY.svg',
+    '{W/U}': 'https://svgs.scryfall.io/card-symbols/WU.svg',
+    '{W/B}': 'https://svgs.scryfall.io/card-symbols/WB.svg',
+    '{B/R}': 'https://svgs.scryfall.io/card-symbols/BR.svg',
+    '{B/G}': 'https://svgs.scryfall.io/card-symbols/BG.svg',
+    '{U/B}': 'https://svgs.scryfall.io/card-symbols/UB.svg',
+    '{U/R}': 'https://svgs.scryfall.io/card-symbols/UR.svg',
+    '{R/G}': 'https://svgs.scryfall.io/card-symbols/RG.svg',
+    '{R/W}': 'https://svgs.scryfall.io/card-symbols/RW.svg',
+    '{G/W}': 'https://svgs.scryfall.io/card-symbols/GW.svg',
+    '{G/U}': 'https://svgs.scryfall.io/card-symbols/GU.svg',
+    '{B/G/P}': 'https://svgs.scryfall.io/card-symbols/BGP.svg',
+    '{B/R/P}': 'https://svgs.scryfall.io/card-symbols/BRP.svg',
+    '{G/U/P}': 'https://svgs.scryfall.io/card-symbols/GUP.svg',
+    '{G/W/P}': 'https://svgs.scryfall.io/card-symbols/GWP.svg',
+    '{R/G/P}': 'https://svgs.scryfall.io/card-symbols/RGP.svg',
+    '{R/W/P}': 'https://svgs.scryfall.io/card-symbols/RWP.svg',
+    '{U/B/P}': 'https://svgs.scryfall.io/card-symbols/UBP.svg',
+    '{U/R/P}': 'https://svgs.scryfall.io/card-symbols/URP.svg',
+    '{W/B/P}': 'https://svgs.scryfall.io/card-symbols/WBP.svg',
+    '{W/U/P}': 'https://svgs.scryfall.io/card-symbols/WUP.svg',
+    '{2/W}': 'https://svgs.scryfall.io/card-symbols/2W.svg',
+    '{2/U}': 'https://svgs.scryfall.io/card-symbols/2U.svg',
+    '{2/B}': 'https://svgs.scryfall.io/card-symbols/2B.svg',
+    '{2/R}': 'https://svgs.scryfall.io/card-symbols/2R.svg',
+    '{2/G}': 'https://svgs.scryfall.io/card-symbols/2G.svg',
+    '{P}': 'https://svgs.scryfall.io/card-symbols/P.svg',
+    '{W/P}': 'https://svgs.scryfall.io/card-symbols/WP.svg',
+    '{U/P}': 'https://svgs.scryfall.io/card-symbols/UP.svg',
+    '{B/P}': 'https://svgs.scryfall.io/card-symbols/BP.svg',
+    '{R/P}': 'https://svgs.scryfall.io/card-symbols/RP.svg',
+    '{G/P}': 'https://svgs.scryfall.io/card-symbols/GP.svg',
+    '{HW}': 'https://svgs.scryfall.io/card-symbols/HW.svg',
+    '{HR}': 'https://svgs.scryfall.io/card-symbols/HR.svg',
+    '{W}': 'https://svgs.scryfall.io/card-symbols/W.svg',
+    '{U}': 'https://svgs.scryfall.io/card-symbols/U.svg',
+    '{B}': 'https://svgs.scryfall.io/card-symbols/B.svg',
+    '{R}': 'https://svgs.scryfall.io/card-symbols/R.svg',
+    '{G}': 'https://svgs.scryfall.io/card-symbols/G.svg',
+    '{C}': 'https://svgs.scryfall.io/card-symbols/C.svg',
+    '{S}': 'https://svgs.scryfall.io/card-symbols/S.svg'
+};
+
+// console.log(await getSymbolMap())
+console.log(translateQuestionToString("mana_cost@{3}"));
+console.log(translateQuestionToString("mana_cost@{W}{3}"));
