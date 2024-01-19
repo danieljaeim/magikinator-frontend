@@ -486,6 +486,7 @@ export default function Home({ Component, pageProps }) {
                       >
                         {" "}
                         {translateQuestionToString(bestQuestion).text}
+                        <div>{entropyValue}</div>
                         <span class="flex justify-center">
                           {translateQuestionToString(bestQuestion).symbols.map(
                             (symbol, i) => (
